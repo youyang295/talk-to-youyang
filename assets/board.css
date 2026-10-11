@@ -1,0 +1,117 @@
+/* ===========================================================
+   留言板 / 改进建议 / 夸夸板
+   =========================================================== */
+
+/* ---------- 顶部那条模式提示 ---------- */
+.board-status {
+  margin: 0 0 18px;
+  padding: 11px 16px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 13px; line-height: 1.6; color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.board-status .bs-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; box-shadow: 0 0 10px rgba(127, 240, 192, 0.8); }
+.board-status.local .bs-dot { background: #ffc457; box-shadow: 0 0 10px rgba(255, 196, 87, 0.8); }
+.board-status .bs-txt { flex: 1 1 240px; }
+.board-status .bs-refresh {
+  font: inherit; font-size: 12.5px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px; cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.board-status .bs-refresh:hover { color: var(--text); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.09); }
+
+/* ---------- 三个板子 ---------- */
+.board { --k: var(--accent); }
+.board[data-kind="idea"] { --k: var(--accent-2); }
+.board[data-kind="praise"] { --k: var(--accent-3); }
+
+.board .panel-head h2 { display: flex; align-items: center; gap: 9px; }
+.board .panel-head h2::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--k); box-shadow: 0 0 14px var(--k);
+}
+.board .panel-desc strong { color: var(--k); font-weight: 600; }
+
+.board-form { margin: 15px 0 0; }
+.board-form textarea {
+  width: 100%; min-height: 74px;
+  padding: 13px 15px;
+  font: inherit; font-size: 14.5px; line-height: 1.7;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  resize: vertical;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.board-form textarea::placeholder,
+.board-actions input::placeholder { color: var(--text-dim); }
+.board-form textarea:focus,
+.board-actions input:focus {
+  outline: none;
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(110, 231, 215, 0.1);
+}
+
+.board-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.board-actions input {
+  flex: 1 1 220px; min-width: 0;
+  padding: 11px 15px;
+  font: inherit; font-size: 14px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.btn.btn-sm {
+  width: auto; flex: none;
+  margin: 0; padding: 11px 22px;
+  font-size: 14px; letter-spacing: 0.04em;
+  border-radius: 999px;
+}
+
+.board-msg { margin: 10px 2px 0; font-size: 13px; line-height: 1.6; color: var(--text-dim); }
+.board-msg.ok { color: var(--ok); }
+.board-msg.warn { color: #ffc457; }
+.board-msg.err { color: var(--danger); }
+
+/* ---------- 留言列表 ---------- */
+.board-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.board-item {
+  padding: 13px 15px 13px 17px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--k);
+  border-radius: 14px;
+  animation: biIn 0.3s ease both;
+}
+@keyframes biIn { from { opacity: 0; transform: translateY(-5px); } }
+
+.bi-head { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; font-size: 12.5px; color: var(--text-dim); }
+.bi-name { color: var(--k); font-weight: 600; }
+.bi-time { flex: 1 1 auto; }
+.bi-del {
+  font: inherit; font-size: 12px;
+  color: var(--text-dim);
+  background: none; border: 0; padding: 2px 4px;
+  cursor: pointer; opacity: 0.5;
+  transition: opacity 0.18s, color 0.18s;
+}
+.bi-del:hover { opacity: 1; color: var(--danger); }
+.bi-del.confirm { opacity: 1; color: var(--danger); }
+.bi-text { margin: 0; font-size: 14.5px; line-height: 1.78; color: #e7ecff; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.board-empty { margin: 16px 2px 0; font-size: 13px; color: var(--text-dim); }
+
+@media (max-width: 560px) {
+  .board-actions { flex-direction: column; align-items: stretch; }
+  .board-actions input, .btn.btn-sm { width: 100%; }
+}

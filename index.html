@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>关于 sly 的有趣问答</title>
+<meta name="description" content="进门前，先对上暗号。" />
+<meta name="theme-color" content="#080b1a" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%236ee7d7'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="assets/style.css" />
+<link rel="stylesheet" href="assets/quiz.css" />
+<link rel="stylesheet" href="assets/board.css" />
+</head>
+<body>
+
+<!-- 背景装饰 -->
+<div class="bg" aria-hidden="true">
+  <span class="blob b1"></span>
+  <span class="blob b2"></span>
+  <span class="blob b3"></span>
+  <div class="grid-lines"></div>
+  <div class="noise"></div>
+</div>
+
+<!-- ① 门禁 -->
+<main id="gate" class="stage gate">
+  <section class="card" id="gateCard">
+    <p class="eyebrow"><span class="lock-dot"></span> PRIVATE ENTRANCE</p>
+    <h1 class="title">进门前，先对上暗号</h1>
+    <p class="sub">三个问题，答完就放你进来。<br />答错了也不丢人，只是我会知道不是你。</p>
+
+    <form id="gateForm" novalidate autocomplete="off">
+      <div class="field" id="field1">
+        <label for="q1">
+          请输入我的全名
+          <span class="hint">（sly）</span>
+        </label>
+        <input
+          id="q1" name="q1" type="text" inputmode="text"
+          placeholder="在这里写下我的名字" autocomplete="off" spellcheck="false"
+        />
+        <p class="msg" id="q1Msg" role="alert" aria-live="polite"></p>
+      </div>
+
+      <div class="field" id="fieldG">
+        <label id="genderLabel">
+          你的性别
+          <span class="hint">（方便我知道该怎么称呼你）</span>
+        </label>
+        <div class="pill-group" id="genderGroup" role="radiogroup" aria-labelledby="genderLabel">
+          <button type="button" class="pill" role="radio" aria-checked="false" data-value="男生">男生</button>
+          <button type="button" class="pill" role="radio" aria-checked="false" data-value="女生">女生</button>
+          <button type="button" class="pill" role="radio" aria-checked="false" data-value="保密">保密</button>
+        </div>
+        <p class="msg" id="genderMsg" role="alert" aria-live="polite"></p>
+      </div>
+
+      <div class="field" id="field2">
+        <label for="q2">
+          你和我有关的经历
+          <span class="hint">（最好让我印象深刻，至少让我猜到你是谁）</span>
+        </label>
+        <textarea
+          id="q2" name="q2" rows="4"
+          placeholder="写一件只有你我之间才会发生的事……" spellcheck="false"
+        ></textarea>
+        <p class="msg" id="q2Msg" role="alert" aria-live="polite"></p>
+      </div>
+
+      <button class="btn" type="submit" id="enterBtn">
+        <span>进 入</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12m0 0-5-5m5 5-5 5" /></svg>
+      </button>
+
+      <p class="tip" id="tip" hidden></p>
+    </form>
+  </section>
+</main>
+
+<!-- ② 站内 -->
+<div id="site" class="stage site" hidden>
+  <header class="topbar">
+    <a class="logo" href="#top" aria-label="sly">sly<span class="dot">.</span></a>
+    <div class="topbar-right">
+      <span class="badge"><span class="pulse"></span>已验证进入</span>
+      <button class="ghost" id="lockBtn" type="button">重新上锁</button>
+    </div>
+  </header>
+
+  <main class="wrap" id="top">
+    <section class="hero">
+      <p class="eyebrow">WELCOME IN</p>
+      <h1>关于 sly 的有趣问答</h1>
+      <p class="sub">你进来了，说明你确实认识我。<br />站里分四个部分：答题闯关、留言板、改进建议、还有专门夸我的地方。</p>
+    </section>
+
+    <section class="panel note-panel">
+      <header class="panel-head">
+        <h2>你留下的那段经历</h2>
+        <span class="stamp" id="passTime">—</span>
+      </header>
+      <blockquote id="noteText"></blockquote>
+      <p class="sign">—— 一位神秘的朋友<span class="sign-gender" id="signGender"></span></p>
+    </section>
+
+    <!-- 第一部分：答题闯关 -->
+    <section class="panel quiz-entry">
+      <header class="panel-head">
+        <h2>第一部分 · 答题闯关</h2>
+        <span class="stamp" id="bankStamp">题库读取中…</span>
+      </header>
+      <p class="panel-desc">
+        从「悠阳的近况」或「悠阳的爱好」里选一条线，系统自动配上「悠阳的习惯」6 题，
+        一共 10 题。<strong>题目每次从问题库里随机抽</strong>，答完给评分。
+      </p>
+      <div class="cat-row">
+        <span class="cat-chip">① 悠阳的近况 <b id="cnt近况">–</b> 题</span>
+        <span class="cat-chip">② 悠阳的爱好 <b id="cnt爱好">–</b> 题</span>
+        <span class="cat-chip fixed">③ 悠阳的习惯 <b id="cnt习惯">–</b> 题 · 固定 6 题</span>
+      </div>
+      <button class="btn" id="toQuizBtn" type="button">
+        <span>进入答题</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12m0 0-5-5m5 5-5 5" /></svg>
+      </button>
+    </section>
+
+    <p class="board-status" id="boardStatus" hidden></p>
+
+    <!-- 第二部分：留言板 -->
+    <section class="panel board" data-kind="ask" id="board-ask">
+      <header class="panel-head">
+        <h2>第二部分 · 留言板</h2>
+        <span class="stamp" data-role="count">—</span>
+      </header>
+      <p class="panel-desc">
+        有什么想问我的，直接写在这儿，<strong>别人也看得见</strong>。不用写真名，署个称呼就行。
+      </p>
+      <form class="board-form" data-role="form" autocomplete="off">
+        <textarea data-role="text" rows="3" maxlength="500" placeholder="你想问我点什么？"></textarea>
+        <div class="board-actions">
+          <input data-role="name" type="text" maxlength="16" placeholder="署名（不填就写「一位朋友」）" />
+          <button class="btn btn-sm" type="submit">发出去</button>
+        </div>
+        <p class="board-msg" data-role="msg" role="status" aria-live="polite"></p>
+      </form>
+      <ul class="board-list" data-role="list"></ul>
+      <p class="board-empty" data-role="empty">还没有人提问 —— 你可以是第一个。</p>
+    </section>
+
+    <!-- 第三部分：改进建议 -->
+    <section class="panel board" data-kind="idea" id="board-idea">
+      <header class="panel-head">
+        <h2>第三部分 · 改进建议</h2>
+        <span class="stamp" data-role="count">—</span>
+      </header>
+      <p class="panel-desc">
+        哪儿不好用、想看什么、想加什么功能，都写在这儿。<strong>我会照着改</strong>。
+      </p>
+      <form class="board-form" data-role="form" autocomplete="off">
+        <textarea data-role="text" rows="3" maxlength="500" placeholder="比如：答题的提示能不能再含蓄点？"></textarea>
+        <div class="board-actions">
+          <input data-role="name" type="text" maxlength="16" placeholder="署名（不填就写「一位朋友」）" />
+          <button class="btn btn-sm" type="submit">提建议</button>
+        </div>
+        <p class="board-msg" data-role="msg" role="status" aria-live="polite"></p>
+      </form>
+      <ul class="board-list" data-role="list"></ul>
+      <p class="board-empty" data-role="empty">还没有建议 —— 说一条，我改给你看。</p>
+    </section>
+
+    <!-- 第四部分：夸夸板 -->
+    <section class="panel board" data-kind="praise" id="board-praise">
+      <header class="panel-head">
+        <h2>第四部分 · 夸夸板</h2>
+        <span class="stamp" data-role="count">—</span>
+      </header>
+      <p class="panel-desc">
+        这部分没什么用，就是<strong>专门给我说好话</strong>的。写吧，我爱看。
+      </p>
+      <form class="board-form" data-role="form" autocomplete="off">
+        <textarea data-role="text" rows="3" maxlength="500" placeholder="夸我一句，别客气。"></textarea>
+        <div class="board-actions">
+          <input data-role="name" type="text" maxlength="16" placeholder="署名（不填就写「一位朋友」）" />
+          <button class="btn btn-sm" type="submit">夸一句</button>
+        </div>
+        <p class="board-msg" data-role="msg" role="status" aria-live="polite"></p>
+      </form>
+      <ul class="board-list" data-role="list"></ul>
+      <p class="board-empty" data-role="empty">还没有人夸我 —— 你先来。</p>
+    </section>
+
+    <footer class="foot">
+      <span>© <span id="year"></span> sly</span>
+      <span class="muted">只有知道名字的人，才看得到这里。</span>
+    </footer>
+  </main>
+</div>
+
+<!-- ③ 答题闯关 -->
+<main id="quiz" class="stage quiz" hidden>
+  <div class="quiz-shell">
+
+    <!-- 选题 -->
+    <section class="card quiz-card" id="quizPick">
+      <button class="back-link" id="pickBack" type="button">← 回首页</button>
+      <p class="eyebrow">STEP 1 · 选一条线</p>
+      <h1 class="title">先选一条线，再答十道题</h1>
+      <p class="sub">选「近况」或「爱好」中的一条，系统再自动补上「习惯」6 题，一共 10 题；题目从问题库里随机抽。</p>
+
+      <div class="pick-grid">
+        <button type="button" class="pick" data-cat="近况">
+          <span class="pick-num">01</span>
+          <span class="pick-name">悠阳的近况</span>
+          <span class="pick-meta">最近的生活 · 抽 4 题</span>
+          <span class="pick-count" data-count="近况">—</span>
+        </button>
+        <button type="button" class="pick" data-cat="爱好">
+          <span class="pick-num">02</span>
+          <span class="pick-name">悠阳的爱好</span>
+          <span class="pick-meta">喜欢的东西 · 抽 4 题</span>
+          <span class="pick-count" data-count="爱好">—</span>
+        </button>
+      </div>
+
+      <div class="fixed-line">
+        <span class="cat-chip fixed">③ 悠阳的习惯</span>
+        <span class="fixed-note">固定 6 题，选谁都躲不掉</span>
+      </div>
+
+      <button class="btn" id="startBtn" type="button" disabled>
+        <span id="startBtnText">先选一条线</span>
+      </button>
+      <p class="tip" id="bankWarn" hidden></p>
+    </section>
+
+    <!-- 答题 -->
+    <section class="card quiz-card" id="quizPlay" hidden>
+      <div class="quiz-top">
+        <span class="tag" id="qCat">—</span>
+        <span class="counter" id="qCounter">第 1 / 10 题</span>
+        <span class="score-live" id="qScore">0 分</span>
+      </div>
+      <div class="bar"><i id="qBar"></i></div>
+
+      <h2 class="q-text" id="qText"></h2>
+
+      <div class="field" id="qField">
+        <input id="qInput" type="text" autocomplete="off" spellcheck="false" placeholder="写下你的答案，回车提交" />
+        <p class="msg" id="qMsg" role="alert" aria-live="polite"></p>
+      </div>
+
+      <div class="quiz-actions" id="qActions">
+        <button class="btn" id="qSubmit" type="button">提交</button>
+        <div class="side-actions">
+          <button class="ghost" id="qHint" type="button">给点提示</button>
+          <button class="ghost" id="qSkip" type="button">跳过</button>
+        </div>
+      </div>
+
+      <div class="feedback" id="qFeedback" hidden>
+        <p class="fb-head" id="fbHead"></p>
+        <p class="fb-answer" id="fbAnswer"></p>
+      </div>
+
+      <button class="back-link" id="playQuit" type="button">← 不玩了，回首页</button>
+    </section>
+
+    <!-- 结果 -->
+    <section class="card quiz-card" id="quizResult" hidden>
+      <p class="eyebrow">RESULT</p>
+      <div class="result-head">
+        <div class="result-score"><b id="rScore">0</b><span id="rTotal">/10</span></div>
+        <p class="result-comment" id="rComment"></p>
+      </div>
+      <div class="breakdown" id="rBreakdown"></div>
+      <h3 class="review-title">错题回顾</h3>
+      <ul class="review" id="rReview"></ul>
+      <div class="result-actions">
+        <button class="btn" id="againBtn" type="button">再来一批（同一条线）</button>
+        <button class="ghost" id="switchBtn" type="button">换一条线</button>
+        <button class="ghost" id="homeBtn" type="button">回首页</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="assets/question-bank.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/quiz.js"></script>
+<script src="assets/board.js"></script>
+</body>
+</html>
