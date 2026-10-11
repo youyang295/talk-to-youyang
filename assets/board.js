@@ -1,17 +1,33 @@
 /* ===========================================================
    留言板 / 改进建议 / 夸夸板
    -----------------------------------------------------------
-   两种模式，页面自己判断：
-     共享模式：双击「启动服务.bat」打开网站，大家写的都存到服务器上，互相看得见
+   三种模式，页面自己从上往下试：
+     共享模式：双击「启动服务.bat」打开网站，大家写的都存到那台服务器上
+     云端模式：填好下面 CLOUD 里的地址和 key，挂在公网上（GitHub Pages）也能共享
      本地模式：直接双击 index.html，只存在这台电脑的浏览器里
    =========================================================== */
 (function () {
+  /* ---------------- 云数据库（Supabase）配置 ----------------
+     想让公网上的网站也能共享留言，照 README 里
+     「让留言全网都能看见（Supabase 云端模式）」那一节做，然后把下面两行填上：
+       url —— 形如 https://abcdefgh.supabase.co
+       key —— anon public 那一把（很长一串，本来就是给浏览器看的）
+     两行都留空 = 不启用云端模式。 */
+  const CLOUD = {
+    url: 'https://flrssttfirqdpncaeiql.supabase.co',
+    key: 'sb_publishable_mDSlb7v0-_SsbUBxur5rVw_Y9tFTpma',
+    table: 'sly_messages',   // 存留言的表
+    view: 'sly_public',      // 对外的只读视图（不含撤回用的 token）
+    delFn: 'sly_delete',     // 撤回用的数据库函数
+  };
+
   const LIMIT = 500;          // 一条最多多少字
   const NAME_LIMIT = 16;      // 署名最多多少字
   const KINDS = ['ask', 'idea', 'praise'];
   const LOCAL_KEY = 'sly_board_v1';       // 本地模式的留言
   const MINE_KEY = 'sly_board_mine_v1';   // 我发过哪几条（用来撤回）
-  const POLL_MS = 20000;                  // 共享模式下多久自动刷一次
+  const POLL_MS = 20000;                  // 共享 / 云端模式下多久自动刷一次
+  const MAX_ITEMS = 500;                  // 一次最多取多少条
 
   const state = { mode: 'local', items: { ask: [], idea: [], praise: [] }, ready: false };
   const boards = Array.prototype.slice.call(document.querySelectorAll('.board'));
@@ -83,25 +99,99 @@
     return data;
   }
 
-  /* 打开页面时判断：有服务器就是共享模式，没有就是本地模式 */
+  /* ---------------- 跟云数据库说话（Supabase 的 REST 接口，不用装 SDK） ---------------- */
+  const cloudReady = () => !!(CLOUD.url && CLOUD.key);
+
+  function uuid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    const b = new Uint8Array(16);
+    try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = Array.prototype.map.call(b, (x) => ('0' + x.toString(16)).slice(-2)).join('');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+  }
+
+  const cloudHeaders = (extra) => Object.assign({
+    apikey: CLOUD.key,
+    Authorization: 'Bearer ' + CLOUD.key,
+  }, extra || {});
+
+  async function cloudLoad() {
+    const url = CLOUD.url + '/rest/v1/' + CLOUD.view +
+      '?select=id,kind,name,text,at&order=at.desc&limit=' + MAX_ITEMS;
+    const res = await fetch(url, { headers: cloudHeaders(), cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    const grouped = {};
+    KINDS.forEach((k) => { grouped[k] = []; });
+    (Array.isArray(rows) ? rows : []).forEach((r) => {
+      if (!grouped[r.kind]) return;
+      grouped[r.kind].push({ id: r.id, text: r.text, name: r.name, at: Date.parse(r.at) || 0 });
+    });
+    state.items = normalize(grouped);
+  }
+
+  async function cloudPost(kind, text, name) {
+    const row = {
+      id: uuid(),
+      kind,
+      name: name || defaultName(),
+      text,
+      token: uuid(),                       // 只有这台浏览器知道，用来撤回
+      at: new Date().toISOString(),
+    };
+    const res = await fetch(CLOUD.url + '/rest/v1/' + CLOUD.table, {
+      method: 'POST',
+      headers: cloudHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+      body: JSON.stringify(row),
+    });
+    if (!res.ok) {
+      let why = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && (j.message || j.hint)) why = j.message || j.hint; } catch (e) {}
+      throw new Error(why);
+    }
+    rememberMine(row.id, row.token);
+  }
+
+  async function cloudRemove(id) {
+    const res = await fetch(CLOUD.url + '/rest/v1/rpc/' + CLOUD.delFn, {
+      method: 'POST',
+      headers: cloudHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ p_id: id, p_token: mine()[id] || '' }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const done = await res.json().catch(() => false);
+    if (done !== true) throw new Error('没删掉：这条不是这台电脑发的');
+    forgetMine(id);
+  }
+
+  /* 打开页面时判断走哪种模式：自家服务器 > 云数据库 > 本地 */
   async function detect() {
-    if (location.protocol === 'file:') return false;
-    try {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 2000);
-      const res = await fetch(apiUrl('api/board'), { signal: ctl.signal, cache: 'no-store' });
-      clearTimeout(timer);
-      if (!res.ok) return false;
-      const data = await res.json();
-      if (data && data.ok && data.items) { state.items = normalize(data.items); return true; }
-    } catch (e) { /* 没有服务器，走本地模式 */ }
-    return false;
+    if (location.protocol !== 'file:') {
+      try {
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), 2000);
+        const res = await fetch(apiUrl('api/board'), { signal: ctl.signal, cache: 'no-store' });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ok && data.items) { state.items = normalize(data.items); return 'shared'; }
+        }
+      } catch (e) { /* 没有自家服务器，接着看云端 */ }
+    }
+    if (cloudReady()) {
+      try { await cloudLoad(); return 'cloud'; } catch (e) { /* 云端没连上，退回本地 */ }
+    }
+    return 'local';
   }
 
   async function load() {
     if (state.mode === 'shared') {
       const data = await call('api/board');
       state.items = normalize(data.items);
+    } else if (state.mode === 'cloud') {
+      await cloudLoad();
     } else {
       state.items = normalize(readJSON(LOCAL_KEY, {}));
     }
@@ -115,6 +205,7 @@
       if (data.item && data.item.id) rememberMine(data.item.id, data.item.token || '');
       return;
     }
+    if (state.mode === 'cloud') { await cloudPost(kind, text, name); return; }
     const item = Object.assign({ id: 'local-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) }, base);
     const all = readJSON(LOCAL_KEY, {});
     all[kind] = [item].concat(Array.isArray(all[kind]) ? all[kind] : []);
@@ -125,6 +216,8 @@
   async function remove(kind, id) {
     if (state.mode === 'shared') {
       await call('api/board/delete', { body: { id, token: mine()[id] || '' } });
+    } else if (state.mode === 'cloud') {
+      await cloudRemove(id);
     } else {
       const all = readJSON(LOCAL_KEY, {});
       all[kind] = (Array.isArray(all[kind]) ? all[kind] : []).filter((it) => it.id !== id);
@@ -199,7 +292,8 @@
 
   function renderStatus() {
     if (!statusEl) return;
-    const shared = state.mode === 'shared';
+    const shared = state.mode === 'shared' || state.mode === 'cloud';
+    const online = location.protocol !== 'file:';   // 挂在网上（比如 GitHub Pages）但没后台
     statusEl.hidden = false;
     statusEl.className = 'board-status ' + (shared ? 'shared' : 'local');
     statusEl.textContent = '';
@@ -209,9 +303,13 @@
 
     const txt = document.createElement('span');
     txt.className = 'bs-txt';
-    txt.textContent = shared
-      ? '共享模式：下面三个板子都连在服务器上，大家写的所有人都看得见。'
-      : '本地模式：下面三个板子只存在这台电脑上，只有你看得见。想让别人也看见，双击文件夹里的「启动服务.bat」。';
+    txt.textContent = state.mode === 'cloud'
+      ? '云端模式：三个板子都连在云数据库上，谁写的所有人都看得见。'
+      : state.mode === 'shared'
+        ? '共享模式：下面三个板子都连在服务器上，大家写的所有人都看得见。'
+        : online
+          ? '这台站还没接后台：留言只存在你自己的浏览器里，别人看不见，站主也收不到。'
+          : '本地模式：下面三个板子只存在这台电脑上，只有你看得见。想让别人也看见，双击文件夹里的「启动服务.bat」。';
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -275,12 +373,12 @@
 
   /* ---------------- 上线 ---------------- */
   (async function main() {
-    state.mode = (await detect()) ? 'shared' : 'local';
+    state.mode = await detect();
     renderStatus();
     try { await load(); } catch (e) { renderAll(); }
     state.ready = true;
 
-    if (state.mode === 'shared') {
+    if (state.mode === 'shared' || state.mode === 'cloud') {
       setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
     }
   })();
