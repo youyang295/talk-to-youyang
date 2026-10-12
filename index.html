@@ -134,6 +134,7 @@
       </header>
       <p class="panel-desc">
         有什么想问我的，直接写在这儿，<strong>别人也看得见</strong>。不用写真名，署个称呼就行。
+        <span class="board-hint">点署名能看 TA 和我的经历；觉得哪条好就点 ♥，想接着聊就「说两句」—— 评论按赞数排，前三条直接露出来，其余的可以自己展开。</span>
       </p>
       <form class="board-form" data-role="form" autocomplete="off">
         <textarea data-role="text" rows="3" maxlength="500" placeholder="你想问我点什么？"></textarea>
@@ -176,6 +177,7 @@
       </header>
       <p class="panel-desc">
         这部分没什么用，就是<strong>专门给我说好话</strong>的。写吧，我爱看。
+        <span class="board-hint">夸得好的那条会被别人点 ♥；点署名还能看 TA 和我的经历。</span>
       </p>
       <form class="board-form" data-role="form" autocomplete="off">
         <textarea data-role="text" rows="3" maxlength="500" placeholder="夸我一句，别客气。"></textarea>
@@ -194,6 +196,17 @@
       <span class="muted">只有知道名字的人，才看得到这里。</span>
     </footer>
   </main>
+
+  <!-- 点署名弹出来的「TA 和我的经历」 -->
+  <div class="notepop" id="notePop" hidden>
+    <div class="np-card" role="dialog" aria-modal="true" aria-labelledby="npName">
+      <button class="np-close" id="npClose" type="button" aria-label="关闭">×</button>
+      <p class="np-kicker">TA 和我的经历</p>
+      <h3 class="np-name" id="npName">一位朋友</h3>
+      <p class="np-text" id="npText"></p>
+      <p class="np-foot">这是 TA 进站时写下的话，原样放在这儿。</p>
+    </div>
+  </div>
 </div>
 
 <!-- ③ 答题闯关 -->

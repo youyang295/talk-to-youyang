@@ -182,9 +182,12 @@
 }
 .feedback.right { border-color: rgba(127, 240, 192, 0.4); background: rgba(127, 240, 192, 0.08); }
 .feedback.wrong { border-color: rgba(255, 128, 149, 0.35); background: rgba(255, 128, 149, 0.07); }
+.feedback.half { border-color: rgba(255, 209, 128, 0.38); background: rgba(255, 209, 128, 0.07); }
 .fb-head { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; }
 .feedback.right .fb-head { color: var(--ok); }
 .feedback.wrong .fb-head { color: var(--danger); }
+.feedback.half .fb-head { color: var(--half); }
+.fb-ask { color: var(--half); font-size: 13.5px; }
 .fb-answer { margin: 0; font-size: 14px; line-height: 1.75; color: var(--text-soft); }
 .fb-answer b { color: #fff; }
 .fb-answer s { color: var(--text-dim); }
@@ -227,7 +230,18 @@
   font-size: 13.5px; line-height: 1.75;
 }
 .review li.skip { background: rgba(255, 255, 255, 0.035); border-color: var(--line); }
+.review li.half { background: rgba(255, 209, 128, 0.06); border-color: rgba(255, 209, 128, 0.28); }
 .review li .rq { color: #e8ecff; }
+.review li .rbadge {
+  display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; color: var(--half);
+  background: rgba(255, 209, 128, 0.12); border: 1px solid rgba(255, 209, 128, 0.3);
+  vertical-align: middle;
+}
+.review .review-tip {
+  background: rgba(255, 209, 128, 0.07); border-color: rgba(255, 209, 128, 0.25);
+  color: var(--half); font-size: 13px;
+}
 .review li .ra { color: var(--text-dim); }
 .review li .ra b { color: var(--ok); }
 .review li .rmine { color: var(--danger); }

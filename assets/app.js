@@ -246,6 +246,8 @@ lockBtn.addEventListener('click', () => {
 window.SlyApp = {
   go,
   callName: () => callName(),
+  /* 门禁里写的「你和我有关的经历」—— 留言板会把它带在身上，别人点名字就能看见 */
+  passNote: () => (pass && pass.note ? String(pass.note) : ''),
   get pass() { return pass; },
 };
 

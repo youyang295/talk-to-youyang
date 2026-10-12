@@ -37,6 +37,7 @@
   background: var(--k); box-shadow: 0 0 14px var(--k);
 }
 .board .panel-desc strong { color: var(--k); font-weight: 600; }
+.board-hint { display: block; margin-top: 6px; font-size: 12.5px; line-height: 1.7; color: var(--text-dim); }
 
 .board-form { margin: 15px 0 0; }
 .board-form textarea {
@@ -110,6 +111,121 @@
 .bi-text { margin: 0; font-size: 14.5px; line-height: 1.78; color: #e7ecff; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .board-empty { margin: 16px 2px 0; font-size: 13px; color: var(--text-dim); }
+
+/* ---------- 署名：点一下看 TA 的经历 ---------- */
+button.bi-name {
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--k);
+  background: none; border: 0; padding: 0;
+  cursor: pointer;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.22);
+  transition: border-color 0.18s, opacity 0.18s;
+}
+button.bi-name:hover { border-bottom-color: var(--k); opacity: 0.88; }
+button.bi-name:focus-visible { outline: 2px solid var(--k); outline-offset: 2px; border-radius: 3px; }
+
+/* ---------- 点赞 / 说两句 ---------- */
+.bi-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.bi-like, .bi-say, .ci-like, .ci-more {
+  font: inherit; font-size: 12.5px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s, transform 0.12s;
+}
+.bi-like:hover, .bi-say:hover, .ci-like:hover, .ci-more:hover {
+  color: var(--text); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.09);
+}
+.bi-like:active, .ci-like:active { transform: scale(0.94); }
+.bi-like.on, .ci-like.on {
+  color: #ff8fa8;
+  border-color: rgba(255, 143, 168, 0.5);
+  background: rgba(255, 143, 168, 0.12);
+}
+.bi-like:disabled, .ci-like:disabled { opacity: 0.6; cursor: default; }
+
+/* ---------- 评论 ---------- */
+.bi-comments { margin-top: 11px; padding-top: 11px; border-top: 1px dashed var(--line); }
+.ci-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.ci {
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.ci-head { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; font-size: 12px; color: var(--text-dim); }
+.ci-time { flex: 1 1 auto; }
+.ci-text { margin: 0; font-size: 13.5px; line-height: 1.7; color: #e7ecff; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ci-none { font-size: 12.5px; color: var(--text-dim); padding: 2px 0; }
+.ci-more { margin-top: 9px; }
+.ci-form { display: flex; align-items: center; gap: 9px; margin-top: 10px; flex-wrap: wrap; }
+.ci-input {
+  flex: 1 1 220px; min-width: 0;
+  padding: 9px 14px;
+  font: inherit; font-size: 13.5px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ci-input::placeholder { color: var(--text-dim); }
+.ci-input:focus {
+  outline: none;
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(110, 231, 215, 0.1);
+}
+.ci-form .btn.btn-sm { padding: 9px 20px; font-size: 13.5px; }
+.ci-form .board-msg { flex: 1 1 100%; margin: 2px 2px 0; }
+
+/* ---------- 经历浮层 ---------- */
+.notepop {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4, 6, 16, 0.72);
+  backdrop-filter: blur(6px);
+  animation: npIn 0.18s ease both;
+}
+.notepop[hidden] { display: none; }   /* display:flex 会盖掉 hidden 属性，得单独写一条 */
+@keyframes npIn { from { opacity: 0; } }
+.np-card {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: 80vh; overflow: auto;
+  padding: 26px 26px 22px;
+  background: linear-gradient(180deg, rgba(20, 26, 48, 0.98), rgba(13, 17, 34, 0.98));
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+  animation: npCard 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+@keyframes npCard { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
+.np-close {
+  position: absolute; top: 12px; right: 14px;
+  width: 30px; height: 30px; line-height: 1;
+  font-size: 20px; color: var(--text-dim);
+  background: none; border: 0; border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.18s, background 0.18s;
+}
+.np-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.np-kicker { margin: 0 0 8px; font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); }
+.np-name { margin: 0 0 12px; font-size: 20px; color: var(--accent); }
+.np-text {
+  margin: 0; padding: 14px 16px;
+  font-size: 14.5px; line-height: 1.85; color: #e7ecff;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.np-text.np-none { color: var(--text-dim); border-left-color: var(--line-strong); font-style: italic; }
+.np-foot { margin: 14px 0 0; font-size: 12px; color: var(--text-dim); }
 
 @media (max-width: 560px) {
   .board-actions { flex-direction: column; align-items: stretch; }

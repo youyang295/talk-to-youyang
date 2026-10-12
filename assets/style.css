@@ -17,6 +17,7 @@
   --accent-3: #f0abfc;
   --danger: #ff8095;
   --ok: #7ff0c0;
+  --half: #ffd180;          /* 「差不多」的半分 */
   --radius: 20px;
   --shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
   --font: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans SC",

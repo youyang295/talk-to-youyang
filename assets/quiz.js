@@ -66,19 +66,56 @@
       .toLowerCase();
   }
 
-  function isRight(input, item) {
-    const v = normalize(input);
-    if (!v) return false;
-    const cands = [item.a].concat(item.alts || []);
-    return cands.some((c) => {
-      const n = normalize(c);
-      if (!n) return false;
-      if (n === v) return true;                 // 一模一样
-      if (n.length >= 2 && v.includes(n)) return true; // 写在句子里也算对
-      if (v.length >= 2 && n.includes(v)) return true; // 只写了答案的一部分也算对
-      return false;
-    });
+  /* 编辑距离：用来判断「差不多」 */
+  function levenshtein(a, b) {
+    const m = a.length;
+    const n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    let prev = new Array(n + 1);
+    let cur = new Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+    for (let i = 1; i <= m; i++) {
+      cur[0] = i;
+      for (let j = 1; j <= n; j++) {
+        const cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      }
+      const t = prev;
+      prev = cur;
+      cur = t;
+    }
+    return prev[n];
   }
+
+  /* 像不像：0~1，1 = 一模一样 */
+  function similar(a, b) {
+    if (!a || !b) return 0;
+    const long = Math.max(a.length, b.length);
+    if (long < 2) return a === b ? 1 : 0;
+    return 1 - levenshtein(a, b) / long;
+  }
+
+  const CLOSE_AT = 0.5;   // 像到这个程度就按「差不多」算，给 0.5 分
+
+  /* 判分：1 = 对；0.5 = 差不多，我不敢下结论；0 = 差太远 */
+  function judge(input, item) {
+    const v = normalize(input);
+    if (!v) return { score: 0, how: 'empty' };
+    const cands = [item.a].concat(item.alts || []).map(normalize).filter(Boolean);
+    let best = 0;
+    cands.forEach((n) => {
+      if (n === v) best = 1;                            // 一模一样
+      else if (n.length >= 2 && v.includes(n)) best = 1; // 写在句子里也算对
+      else if (v.length >= 2 && n.includes(v)) best = 1; // 只写了答案的一部分也算对
+      else best = Math.max(best, similar(v, n) >= CLOSE_AT ? 0.5 : 0);
+    });
+    if (best >= 1) return { score: 1, how: 'exact' };
+    if (best >= 0.5) return { score: 0.5, how: 'close' };
+    return { score: 0, how: 'wrong' };
+  }
+
+  const fmt = (n) => String(Math.round(n * 10) / 10);   // 4.5 分要显示成 4.5
 
   /* 正确答案 + 别的说法 + 作者备注（答案后面括号里那句） */
   function answerHtml(item) {
@@ -251,44 +288,47 @@
       $('qInput').focus();
       return;
     }
-    settle(val, isRight(val, it));
+    settle(val, judge(val, it));
   }
 
   function skip() {
     if (answered) return;
-    settle('', false, true);
+    settle('', { score: 0, how: 'skip' }, true);
   }
 
-  function settle(mine, right, skipped) {
+  function settle(mine, verdict, skipped) {
     const it = queue[idx];
     answered = true;
+    const half = verdict.score === 0.5;
 
-    if (right) score += 1;
+    score += verdict.score;
     log.push({
       cat: it.cat, q: it.q, a: it.a, alts: it.alts || [], note: it.note || '',
-      mine, right, skipped: !!skipped, hinted: usedHint,
+      mine, right: verdict.score === 1, score: verdict.score, how: verdict.how,
+      skipped: !!skipped, hinted: usedHint,
     });
 
     $('qInput').disabled = true;
-    $('qScore').textContent = `${score} 分`;
+    $('qScore').textContent = `${fmt(score)} 分`;
     $('qBar').style.width = ((idx + 1) / queue.length) * 100 + '%';
     $('qHint').disabled = true;
     $('qSkip').disabled = true;
 
     const fb = $('qFeedback');
     fb.hidden = false;
-    if (right) {
+    if (verdict.score === 1) {
       fb.className = 'feedback right';
       $('fbHead').textContent = '答对了  +1';
       $('fbAnswer').innerHTML = '正确答案：' + answerHtml(it);
       setMsg('ok', '');
     } else {
-      fb.className = 'feedback wrong';
-      $('fbHead').textContent = skipped ? '这题先放着' : '差一点';
+      fb.className = 'feedback ' + (half ? 'half' : 'wrong');
+      $('fbHead').textContent = skipped ? '这题先放着' : half ? '差不多  +0.5' : '差一点';
       $('fbAnswer').innerHTML =
         '正确答案：' + answerHtml(it) +
-        (mine ? `<br />你写的是：<s>${escapeHtml(mine)}</s>` : '');
-      if (!skipped) setMsg('error', '');
+        (mine ? `<br />你写的是：<s>${escapeHtml(mine)}</s>` : '') +
+        (half ? '<br /><span class="fb-ask">等我问问悠阳这个对不对</span>' : '');
+      if (!skipped && !half) setMsg('error', '');
     }
 
     $('qSubmit').textContent = idx + 1 >= queue.length ? '看结果 →' : '下一题 →';
@@ -321,7 +361,7 @@
     const total = queue.length;
     view('quizResult');
 
-    $('rScore').textContent = score;
+    $('rScore').textContent = fmt(score);
     $('rTotal').textContent = '/' + total;
     const call = window.SlyApp ? window.SlyApp.callName() : '朋友';
     $('rComment').textContent = `${call}，${comment(score, total)}`;
@@ -331,30 +371,38 @@
     log.forEach((l) => {
       byCat[l.cat] = byCat[l.cat] || { right: 0, n: 0 };
       byCat[l.cat].n += 1;
-      if (l.right) byCat[l.cat].right += 1;
+      byCat[l.cat].right += l.score;
     });
     $('rBreakdown').innerHTML = Object.keys(byCat)
       .map((cat) => {
         const d = byCat[cat];
         return (
           `<div class="bd-item"><div class="bd-name">${escapeHtml(CAT_LABEL[cat] || cat)}</div>` +
-          `<div class="bd-val">${d.right}<em> / ${d.n} 题</em></div></div>`
+          `<div class="bd-val">${fmt(d.right)}<em> / ${d.n} 题</em></div></div>`
         );
       })
       .join('');
 
-    // 错题回顾
-    const wrongs = log.filter((l) => !l.right);
-    $('rReview').innerHTML = wrongs.length
-      ? wrongs
-          .map(
-            (l) =>
-              `<li class="${l.skipped ? 'skip' : ''}">` +
-              `<div class="rq">${escapeHtml(l.q)}</div>` +
+    // 没拿到满分的题：0 分是错题，0.5 分是我不敢下结论的
+    const rest = log.filter((l) => l.score < 1);
+    const halfN = log.filter((l) => l.score === 0.5).length;
+    $('rReview').innerHTML = rest.length
+      ? (halfN && halfN < rest.length
+          ? `<li class="review-tip">有 ${halfN} 题我觉得「差不多」，先给了 0.5 分 —— 等我问问悠阳这个对不对。</li>`
+          : '') +
+        rest
+          .map((l) => {
+            const half = l.score === 0.5;
+            return (
+              `<li class="${l.skipped ? 'skip' : half ? 'half' : ''}">` +
+              `<div class="rq">${escapeHtml(l.q)}` +
+              (half ? '<span class="rbadge">0.5 分</span>' : '') + '</div>' +
               `<div class="ra">正确答案：${answerHtml(l)}` +
               (l.skipped ? '（跳过了）' : `　你写的：<span class="rmine">${escapeHtml(l.mine)}</span>`) +
+              (half ? '<br /><span class="fb-ask">等我问问悠阳这个对不对</span>' : '') +
               `</div></li>`
-          )
+            );
+          })
           .join('')
       : '<li class="empty">全对，没有错题。</li>';
 
